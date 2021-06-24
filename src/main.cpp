@@ -7,6 +7,7 @@
 #include <CoreFunc/Apphandler.h>
 #include <CoreFunc/RotaryInput.h>
 #include <TJpg_Decoder.h>
+#include <CoreFunc/TouchHandler.h>
 #define FS_NO_GLOBALS
 
 #include <FS.h>
@@ -21,7 +22,9 @@
 #define WIFI_TIMEOUT_MS 20000 
 #define WIFI_RECOVER_TIME_MS 30000
 #define SD_TIMEOUT_MS 2000
-#define SD_RECOVER_TIME_MS 3000 
+#define SD_RECOVER_TIME_MS 3000
+#define TIRQ_PIN  39
+#define CS_PIN  21 
 
 Timeservice tms(19800,0);
 TFT_eSPI tft = TFT_eSPI();
@@ -30,10 +33,11 @@ TFT_eSPI* display = &tft;
 
 TFT_eSprite stext1 = TFT_eSprite(&tft);
 RotaryInput *RI = new RotaryInput();
-Apphandler aph(tmsp,display,RI);
+TouchHandler *th = new TouchHandler();
+Apphandler aph(tmsp,display,RI,th);
+
 
 TaskHandle_t wifitaskhandle;
-TaskHandle_t sdtaskhandle;
 TaskHandle_t touchtashandle;
 TaskHandle_t rotarytaskhandle;
 
@@ -42,6 +46,7 @@ int delta = 1;
 int i = 0;
 bool sdenabled;
 bool loading = true;
+uint16_t x = 0, y = 0;
 void keepWiFiAlive(void * parameter){
     for(;;){
         if(WiFi.status() == WL_CONNECTED){
@@ -102,9 +107,21 @@ void sdcardintializsetask(void *parameter)
   }
 }
 
+void touchtask(void *para)
+{
+  for(;;)
+  {
+    th->touchtask();
+    vTaskDelay(30);
+  }
+}
+
 void setup() {
   Serial.begin(9600);
-  display->init();
+  digitalWrite(21, HIGH);
+  digitalWrite(15, HIGH);
+  digitalWrite( 5, HIGH);
+  display->begin();
   display->setSwapBytes(true);
   display->setRotation(2);
   display->setCursor(55,113);
@@ -112,20 +129,21 @@ void setup() {
   display->setTextColor(TFT_WHITE,TFT_BLACK);
   display->setTextSize(2);
   display->println(F("Loading..."));
-
+  
   xTaskCreate(keepWiFiAlive,"WifiService",5000,NULL,1,&wifitaskhandle);
-  xTaskCreate(sdcardintializsetask,"SD card Task",6000,NULL,1,&sdtaskhandle);
+  xTaskCreate(sdcardintializsetask,"SD Card Task",6000,NULL,1,NULL);
 
   tms.configtimezone();
   tms.timeupdate();
-  
-  uint16_t calData[5] = { 249, 3454, 353, 3490, 2 };
-  tft.setTouch(calData);
     
   xTaskCreate(inputtask,"Rotary Input",1000,NULL,1,&rotarytaskhandle);
+  xTaskCreate(touchtask,"Touch Task",1000,NULL,1,NULL);
+  
+
   display->fillScreen(TFT_BLACK);
   loading = false;
   aph.defaulttolauncher();
+  
 }
 
 void loop() {

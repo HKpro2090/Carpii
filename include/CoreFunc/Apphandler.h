@@ -14,7 +14,7 @@ class Apphandler
     Homeapp *hap;
     public:
     bool otherapprunning;
-    Apphandler(Timeservice* tmsp,TFT_eSPI *espi,RotaryInput *rip);
+    Apphandler(Timeservice* tmsp,TFT_eSPI *espi,RotaryInput *rip,TouchHandler *th);
     void defaulttolauncher();
 };
 #endif

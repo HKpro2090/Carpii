@@ -7,13 +7,14 @@ void homeapptask(void * para)
         happ.homeapphandler();
 }
 
-Apphandler::Apphandler(Timeservice* tmsp,TFT_eSPI *espi,RotaryInput *rip)
+Apphandler::Apphandler(Timeservice* tmsp,TFT_eSPI *espi,RotaryInput *rip,TouchHandler *th)
 {
     Laucherapptask = NULL;
     otherapprunning = false;
     services.display = espi;
     services.tmsp = tmsp;
     services.rotationinput = rip;
+    services.touchinput = th;
     hap = new Homeapp(services);
 }
 
