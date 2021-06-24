@@ -16,12 +16,12 @@ void TouchHandler::touchtask()
       {
         TS_Point p = ts->getPoint();
         
-        Serial.print("x = ");
+        //Serial.print("x = ");
         x = map(p.x,281,3848,0,240);
         y = map(p.y,347,3878,0,320);
-        Serial.print(x);
-        Serial.print(", y = ");
-        Serial.println(y);
+        //Serial.print(x);
+        //Serial.print(", y = ");
+        //Serial.println(y);
       }
     }
 }

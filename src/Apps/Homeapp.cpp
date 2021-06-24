@@ -4,6 +4,8 @@ Homeapp::Homeapp(struct servicepointers s)
 {
     appservices.display = s.display;
     appservices.tmsp = s.tmsp;
+    appservices.touchinput = s.touchinput;
+    appservices.rotationinput = s.rotationinput;
 }
 void Homeapp::homescreen()
 {
@@ -51,13 +53,109 @@ void Homeapp::homescreen()
         appservices.display->unloadFont();
         strncpy(ptimeminute,appservices.tmsp->timeminute,3);
     }
-    vTaskDelay(1000);
 }
 void Homeapp::homeapphandler()
 {
     if(i == 0)
     {
         homescreen();
+        if(appservices.rotationinput->buttonpress)
+        {
+            i = 1;
+            appservices.rotationinput->buttonpress = false;
+        }
+    }
+    if(i == 1)
+    {
+        menuscreen();
     }
     
+}
+void Homeapp::menuscreen()
+{
+    if(j == 0)
+    {
+        appservices.display->fillScreen(TFT_BLACK);
+        //TJpgDec.setJpgScale(1);
+        j = 1;
+    }
+    if(j == 1)
+    {
+        TJpgDec.drawSdJpg(22, 48, "/AppIcons/Weather.jpg");
+        TJpgDec.drawSdJpg(95, 48, "/AppIcons/Alarmclock.jpg");
+        TJpgDec.drawSdJpg(169, 48, "/AppIcons/Walking.jpg");
+        TJpgDec.drawSdJpg(22, 211, "/AppIcons/Health.jpg");
+        TJpgDec.drawSdJpg(95, 211, "/AppIcons/Maps.jpg");
+        TJpgDec.drawSdJpg(169, 211, "/AppIcons/Settings.jpg");
+        j = 2;
+    }
+    if(j == 2)
+    {
+        if(appservices.rotationinput->counter > 6)
+        {
+            appservices.rotationinput->counter = 1;
+        }
+        if(appservices.rotationinput->counter < 0)
+        {
+            appservices.rotationinput->counter = 6;
+        }
+        if(prevcounter != appservices.rotationinput->counter)
+        {
+            if(appservices.rotationinput->counter == 1)
+            {
+                appservices.display->fillCircle(47,109,2,0x5a5aff);
+                appservices.display->fillCircle(120,109,2,TFT_BLACK);
+                appservices.display->fillCircle(188,109,2,TFT_BLACK);
+                appservices.display->fillCircle(47,268,2,TFT_BLACK);
+                appservices.display->fillCircle(120,268,2,TFT_BLACK);
+                appservices.display->fillCircle(190,268,2,TFT_BLACK);
+            }
+            if(appservices.rotationinput->counter == 2)
+            {
+                appservices.display->fillCircle(47,109,2,TFT_BLACK);
+                appservices.display->fillCircle(120,109,2,0x5a5aff);
+                appservices.display->fillCircle(188,109,2,TFT_BLACK);
+                appservices.display->fillCircle(47,268,2,TFT_BLACK);
+                appservices.display->fillCircle(120,268,2,TFT_BLACK);
+                appservices.display->fillCircle(190,268,2,TFT_BLACK);
+            }
+            if(appservices.rotationinput->counter == 3)
+            {
+                appservices.display->fillCircle(47,109,2,TFT_BLACK);
+                appservices.display->fillCircle(120,109,2,TFT_BLACK);
+                appservices.display->fillCircle(188,109,2,0x5a5aff);
+                appservices.display->fillCircle(47,268,2,TFT_BLACK);
+                appservices.display->fillCircle(120,268,2,TFT_BLACK);
+                appservices.display->fillCircle(190,268,2,TFT_BLACK);
+            }
+            if(appservices.rotationinput->counter == 4)
+            {
+                appservices.display->fillCircle(47,109,2,TFT_BLACK);
+                appservices.display->fillCircle(120,109,2,TFT_BLACK);
+                appservices.display->fillCircle(188,109,2,TFT_BLACK);
+                appservices.display->fillCircle(47,268,2,0x5a5aff);
+                appservices.display->fillCircle(120,268,2,TFT_BLACK);
+                appservices.display->fillCircle(190,268,2,TFT_BLACK);
+            }
+            if(appservices.rotationinput->counter == 5)
+            {
+                appservices.display->fillCircle(47,109,2,TFT_BLACK);
+                appservices.display->fillCircle(120,109,2,TFT_BLACK);
+                appservices.display->fillCircle(188,109,2,TFT_BLACK);
+                appservices.display->fillCircle(47,268,2,TFT_BLACK);
+                appservices.display->fillCircle(120,268,2,0x5a5aff);
+                appservices.display->fillCircle(190,268,2,TFT_BLACK);
+            }
+            if(appservices.rotationinput->counter == 6)
+            {
+                appservices.display->fillCircle(47,109,2,TFT_BLACK);
+                appservices.display->fillCircle(120,109,2,TFT_BLACK);
+                appservices.display->fillCircle(188,109,2,TFT_BLACK);
+                appservices.display->fillCircle(47,268,2,TFT_BLACK);
+                appservices.display->fillCircle(120,268,2,TFT_BLACK);
+                appservices.display->fillCircle(190,268,2,0x5a5aff);
+            }
+            prevcounter = appservices.rotationinput->counter;
+        }
+    }
 }

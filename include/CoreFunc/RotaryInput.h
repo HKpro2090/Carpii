@@ -15,9 +15,11 @@ class RotaryInput
     public:
     int counter = 0;
     unsigned long lastButtonPress = 0;
+    bool buttonpress = false;
     String currentDir = "";
     RotaryInput();
     void rotaryRotation();
     void rotarybutton();
+    int returnrotatopncounter();
 };
 #endif

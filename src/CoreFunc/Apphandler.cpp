@@ -4,7 +4,10 @@ void homeapptask(void * para)
 {
     Homeapp happ = *(Homeapp *) para;
     for(;;)
+    {
         happ.homeapphandler();
+        vTaskDelay(10);
+    }
 }
 
 Apphandler::Apphandler(Timeservice* tmsp,TFT_eSPI *espi,RotaryInput *rip,TouchHandler *th)

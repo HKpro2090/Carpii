@@ -35,8 +35,13 @@ void RotaryInput::rotaryRotation()
     if(millis() - lastButtonPress > 50)
     {
       Serial.println(F("Button Pressed!"));
+      buttonpress = true;
     }
     lastButtonPress = millis();
   }
   vTaskDelay(1);
+}
+int RotaryInput::returnrotatopncounter()
+{
+  return counter;
 }
