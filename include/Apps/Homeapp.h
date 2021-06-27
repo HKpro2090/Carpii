@@ -1,15 +1,12 @@
 #ifndef HOMEAPP_H
 #define HOMEAPP_H
-
+#include <Apps/App.h>
 #include <CoreFunc/servicepointers.h>
-
-
-class Homeapp
+#include <CoreFunc/StartAppStruct.h>
+class Homeapp : public App
 {
-private:
-    struct servicepointers appservices;
-    int i = 0;
-    int j = 0;
+    private:
+    //struct servicepointers appservices;
     char ptimeHour[3];
     char ptimeminute[3];
     char ptimesec[3];
@@ -17,8 +14,9 @@ private:
     char ptimemonth[4];
     char ptimedate[3];
     int prevcounter = 0;
+    unsigned long prevtime = 0;
 public:
-    Homeapp(struct servicepointers s);
+    Homeapp(struct servicepointers s,String apname,StartAppStruct *n,bool *stopappflag):App(s,apname,n,stopappflag){};
     void homeapphandler();
     void homescreen();
     void menuscreen();

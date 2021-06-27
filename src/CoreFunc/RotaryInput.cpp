@@ -29,19 +29,32 @@ void RotaryInput::rotaryRotation()
     Serial.println(counter);
   }
   lastStateCLK = currentStateCLK;
-  int btnState = digitalRead(ROTARY_ENCODER_SW);
-  if(btnState == LOW)
-  {
-    if(millis() - lastButtonPress > 50)
-    {
-      Serial.println(F("Button Pressed!"));
-      buttonpress = true;
-    }
-    lastButtonPress = millis();
-  }
+  rotarybutton();
   vTaskDelay(1);
 }
-int RotaryInput::returnrotatopncounter()
+void RotaryInput::rotarybutton()
 {
-  return counter;
+  currentState = digitalRead(ROTARY_ENCODER_SW);
+
+  if(lastState == HIGH && currentState == LOW)
+    pressedTime = millis();
+  else if(lastState == LOW && currentState == HIGH) 
+  { 
+    releasedTime = millis();
+
+    long pressDuration = releasedTime - pressedTime;
+
+    if( pressDuration < SHORT_PRESS_TIME )
+    {
+      shortpress = true;
+      longpress = false;
+    }
+
+    if( pressDuration > LONG_PRESS_TIME )
+    {
+      shortpress = false;
+      longpress = true;
+    }
+  }
+  lastState = currentState;
 }

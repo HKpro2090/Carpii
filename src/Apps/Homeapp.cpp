@@ -1,12 +1,5 @@
 #include "./Apps/Homeapp.h"
 
-Homeapp::Homeapp(struct servicepointers s)
-{
-    appservices.display = s.display;
-    appservices.tmsp = s.tmsp;
-    appservices.touchinput = s.touchinput;
-    appservices.rotationinput = s.rotationinput;
-}
 void Homeapp::homescreen()
 {
     appservices.tmsp->timeupdate();
@@ -56,16 +49,17 @@ void Homeapp::homescreen()
 }
 void Homeapp::homeapphandler()
 {
-    if(i == 0)
+    if(appscreencounter == 0)
     {
         homescreen();
-        if(appservices.rotationinput->buttonpress)
+        if(appservices.rotationinput->shortpress)
         {
-            i = 1;
-            appservices.rotationinput->buttonpress = false;
+            appscreencounter = 1;
+            screenpagecounter = 0;
+            appservices.rotationinput->shortpress = false;
         }
     }
-    if(i == 1)
+    if(appscreencounter == 1)
     {
         menuscreen();
     }
@@ -73,13 +67,15 @@ void Homeapp::homeapphandler()
 }
 void Homeapp::menuscreen()
 {
-    if(j == 0)
+    if(screenpagecounter == 0)
     {
         appservices.display->fillScreen(TFT_BLACK);
         //TJpgDec.setJpgScale(1);
-        j = 1;
+        prevtime = millis();
+        prevcounter = -1;
+        screenpagecounter = 1;
     }
-    if(j == 1)
+    if(screenpagecounter == 1)
     {
         TJpgDec.drawSdJpg(22, 48, "/AppIcons/Weather.jpg");
         TJpgDec.drawSdJpg(95, 48, "/AppIcons/Alarmclock.jpg");
@@ -87,15 +83,15 @@ void Homeapp::menuscreen()
         TJpgDec.drawSdJpg(22, 211, "/AppIcons/Health.jpg");
         TJpgDec.drawSdJpg(95, 211, "/AppIcons/Maps.jpg");
         TJpgDec.drawSdJpg(169, 211, "/AppIcons/Settings.jpg");
-        j = 2;
+        screenpagecounter = 2;
     }
-    if(j == 2)
+    if(screenpagecounter == 2)
     {
         if(appservices.rotationinput->counter > 6)
         {
             appservices.rotationinput->counter = 1;
         }
-        if(appservices.rotationinput->counter < 0)
+        if(appservices.rotationinput->counter <= 0)
         {
             appservices.rotationinput->counter = 6;
         }
@@ -156,6 +152,29 @@ void Homeapp::menuscreen()
                 appservices.display->fillCircle(190,268,2,0x5a5aff);
             }
             prevcounter = appservices.rotationinput->counter;
+            prevtime = millis();
+        }
+        if(appservices.rotationinput->shortpress)
+        {
+            appservices.rotationinput->shortpress = false;
+            if(appservices.rotationinput->counter == 1)
+            {
+                appservices.display->fillScreen(TFT_BLACK);
+                screenpagecounter = 0;
+                newappstruct->startingappname = "Weatherapp";
+                newappstruct->startapp = true;
+                //aph->startapp("Weatherapp");
+                
+            }
+        }
+        if(appservices.rotationinput->longpress)
+        {
+            appservices.rotationinput->longpress = false;
+            appservices.display->fillScreen(TFT_BLACK);
+            memset(ptimedate,0,sizeof(ptimedate));
+            memset(ptimeHour,0,sizeof(ptimeHour));
+            memset(ptimeminute,0,sizeof(ptimeminute));
+            appscreencounter = 0;
         }
     }
 }

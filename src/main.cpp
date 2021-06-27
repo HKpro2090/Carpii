@@ -6,7 +6,7 @@
 #include <TFT_eSPI.h>
 #include <CoreFunc/Apphandler.h>
 #include <CoreFunc/RotaryInput.h>
-//#include <TJpg_Decoder.h>
+#include <TJpg_Decoder.h>
 #include <CoreFunc/TouchHandler.h>
 #define FS_NO_GLOBALS
 
@@ -34,7 +34,8 @@ TFT_eSPI* display = &tft;
 TFT_eSprite stext1 = TFT_eSprite(&tft);
 RotaryInput *RI = new RotaryInput();
 TouchHandler *th = new TouchHandler();
-Apphandler aph(tmsp,display,RI,th);
+Apphandler aph(tmsp,display,RI,th,&aph);
+char test[210];
 
 
 TaskHandle_t wifitaskhandle;
@@ -118,25 +119,26 @@ void touchtask(void *para)
 
 bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap)
 {
-   // Stop further decoding as image is running off bottom of screen
   if ( y >= tft.height() ) return 0;
-
-  // This function will clip the image block rendering automatically at the TFT boundaries
   tft.pushImage(x, y, w, h, bitmap);
-
-  // This might work instead if you adapt the sketch to use the Adafruit_GFX library
-  // tft.drawRGBBitmap(x, y, bitmap, w, h);
-
-  // Return 1 to decode next block
   return 1;
 }
 
+void apphandlerimptask(void *para)
+{
+  for(;;)
+  {
+    aph.appflagchecker();
+    vTaskDelay(1);
+  }
+}
 
 void setup() {
   Serial.begin(9600);
+
   digitalWrite(21, HIGH);
   digitalWrite(15, HIGH);
-  digitalWrite( 5, HIGH);
+  digitalWrite(5, HIGH);
   display->begin();
   display->setSwapBytes(true);
   display->setRotation(2);
@@ -145,21 +147,22 @@ void setup() {
   display->setTextColor(TFT_WHITE,TFT_BLACK);
   display->setTextSize(2);
   display->println(F("Loading..."));
-  
-  xTaskCreate(keepWiFiAlive,"WifiService",5000,NULL,1,&wifitaskhandle);
-  xTaskCreate(sdcardintializsetask,"SD Card Task",6000,NULL,2,NULL);
+  xTaskCreate(keepWiFiAlive,"WifiService",5000,NULL,5,&wifitaskhandle);
 
+  
+  xTaskCreate(sdcardintializsetask,"SD Card Task",6000,NULL,2,NULL);
   tms.configtimezone();
   tms.timeupdate();
     
   xTaskCreate(inputtask,"Rotary Input",1000,NULL,1,&rotarytaskhandle);
-  //xTaskCreate(touchtask,"Touch Task",1000,NULL,1,NULL);
+  xTaskCreate(touchtask,"Touch Task",1000,NULL,1,NULL);
   TJpgDec.setCallback(tft_output);
   TJpgDec.setJpgScale(1);
-
+  xTaskCreate(apphandlerimptask,"Apphandler",1000,NULL,1,NULL);
+  delay(5);
   display->fillScreen(TFT_BLACK);
   loading = false;
-  aph.defaulttolauncher();
+  aph.startapp("Homeapp");
   
 }
 
