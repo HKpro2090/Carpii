@@ -1,4 +1,13 @@
 #include "./CoreFunc/Apphandler.h"
+TFT_eSPI *tft1;
+bool tft_output_original(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap)
+{
+
+  if ( y >= tft1->height() ) return 0;
+  tft1->pushImage(x, y, w, h, bitmap);
+  return 1;
+}
+
 
 void homeapptask(void * para)
 {
@@ -22,6 +31,7 @@ void weatherapptask(void *para)
 
 Apphandler::Apphandler(Timeservice* tmsp,TFT_eSPI *espi,RotaryInput *rip,TouchHandler *th,Apphandler *selfaph)
 {
+    tft1 = espi;
     Laucherapptask = NULL;
     otherapprunning = false;
     services.display = espi;
@@ -52,7 +62,7 @@ void Apphandler::startapp(char *s)
     }
     if(strcmp(s, "Weatherapp") == 0)
     {
-        xTaskCreate(weatherapptask,s,1000,weap,1,&Weatherapptaskhandle);
+        xTaskCreate(weatherapptask,s,5000,weap,1,&Weatherapptaskhandle);
         push(Weatherapptaskhandle);
     }
 }
@@ -60,6 +70,7 @@ void Apphandler::startapp(char *s)
 void Apphandler::quitapp()
 {
     vTaskDelete(top->apptaskhandler);
+    TJpgDec.setCallback(tft_output_original);
     pop();
     vTaskResume(top->apptaskhandler);
 }
@@ -77,7 +88,7 @@ void Apphandler::pop()
     struct AppStackNode* temp;
     if(top == NULL)
     {
-        Serial.println("Nothing to Close");
+        Serial.println(F("Nothing to Close"));
     }
     else
     {

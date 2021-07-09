@@ -5,7 +5,6 @@
 #include <CoreFunc/RotaryInput.h>
 #include <SD.h>
 #include <CoreFunc/TouchHandler.h>
-#include <TJpg_Decoder.h>
 
 struct servicepointers
 {

@@ -8,6 +8,8 @@
 #include <CoreFunc/AppStackNode.h>
 #include <CoreFunc/StartAppStruct.h>
 #include <Apps/Weatherapp.h>
+#include <TJpg_Decoder.h>
+
 class Apphandler
 {
     private:

@@ -3,6 +3,8 @@
 #include <Arduino.h>
 #include <CoreFunc/servicepointers.h>
 #include <CoreFunc/StartAppStruct.h>
+#include <TJpg_Decoder.h>
+
 class App
 {
     public:
