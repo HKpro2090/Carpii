@@ -20,6 +20,7 @@ class Apphandler
     TaskHandle_t Healthapptask;
     TaskHandle_t Mapsapptask;
     TaskHandle_t settingsapptask;
+    TaskHandle_t Keyboardapptaskhandle;
     struct servicepointers services;
     struct AppStackNode *top = NULL;
     StartAppStruct startappstruct;
@@ -29,7 +30,7 @@ class Apphandler
     public:
     Apphandler *aph;
     bool otherapprunning;
-    Apphandler(Timeservice* tmsp,TFT_eSPI *espi,RotaryInput *rip,TouchHandler *th, Apphandler *selfaph);
+    Apphandler(Timeservice* tmsp,TFT_eSPI *espi,TouchHandler *th, Apphandler *selfaph);
     void appstackhandler();
     void updateservicepointer();
     void push(TaskHandle_t s);

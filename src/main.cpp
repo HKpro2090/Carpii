@@ -1,172 +1,166 @@
 #include <Arduino.h>
 #include <Wire.h>
-#include <WiFi.h>
-#include <CoreFunc/Timeservice.h>
-#include "SPI.h"
 #include <TFT_eSPI.h>
-#include <CoreFunc/Apphandler.h>
-#include <CoreFunc/RotaryInput.h>
-#include <CoreFunc/TouchHandler.h>
 #include <TJpg_Decoder.h>
-#define FS_NO_GLOBALS
+#include <SPIFFS.h>
+#include <CoreFunc/WifiService.h>
+#include <CoreFunc/TouchHandler.h>
+#include <CoreFunc/Timeservice.h>
+#include <CoreFunc/Apphandler.h>
+#include <CoreFunc/Keyboard.h>
 
-#include <FS.h>
-#ifdef ESP32
-  #include "SPIFFS.h" // ESP32 only
-#endif
-
-#define SD_CS 5
-
-#define WIFI_NETWORK "005_fast"
-#define WIFI_PASSWORD "005thisisourwifigetout12345"
-#define WIFI_TIMEOUT_MS 20000 
-#define WIFI_RECOVER_TIME_MS 30000
-#define SD_TIMEOUT_MS 2000
-#define SD_RECOVER_TIME_MS 3000
-#define TIRQ_PIN  39
-#define CS_PIN  21 
-
+//Intialize Display Library
 Timeservice tms(19800,0);
-TFT_eSPI tft = TFT_eSPI();
 Timeservice* tmsp = &tms;
+
+// RotaryInput *RI = new RotaryInput();
+TFT_eSPI tft = TFT_eSPI();
 TFT_eSPI* display = &tft;
 TFT_eSprite img = TFT_eSprite(display);
-RotaryInput *RI = new RotaryInput();
-TouchHandler *th = new TouchHandler();
-Apphandler aph(tmsp,display,RI,th,&aph);
-char test[210];
+WifiService wifiserv = WifiService(display);
+TouchHandler *th = new TouchHandler(display);
+Apphandler aph(tmsp,display,th,&aph);
+TFT_eSPI_Button trial;
+Keyboard *keyboard = new Keyboard(display,th);
+#define CALIBRATION_FILE "/TouchCalData1"
+#define REPEAT_CAL false
 
+// TaskHandle_t touchtashandle;
 
-TaskHandle_t wifitaskhandle;
-TaskHandle_t touchtashandle;
-TaskHandle_t rotarytaskhandle;
+// void touchtask(void *para)
+// {
+//   for(;;)
+//   {
+//     th->touchtask();
+//     vTaskDelay(1);
+//   }
+// }
 
-int graphVal = 1;
-int delta = 1;
-int i = 0;
-bool sdenabled;
-bool loading = true;
-uint16_t x = 0, y = 0;
-void keepWiFiAlive(void * parameter){
-    for(;;){
-        if(WiFi.status() == WL_CONNECTED){
-            vTaskDelay(10000 / portTICK_PERIOD_MS);
-            continue;
-        }
-
-        Serial.println(F("[WIFI] Connecting"));
-        WiFi.mode(WIFI_STA);
-        delay(2000);
-        WiFi.begin(WIFI_NETWORK, WIFI_PASSWORD);
-
-        unsigned long startAttemptTime = millis();
-
-        while (WiFi.status() != WL_CONNECTED && 
-                millis() - startAttemptTime < WIFI_TIMEOUT_MS){}
-
-        if(WiFi.status() != WL_CONNECTED){
-            Serial.println(F("[WIFI] FAILED"));
-            vTaskDelay(WIFI_RECOVER_TIME_MS / portTICK_PERIOD_MS);
-			  continue;
-        }
-
-        Serial.println(F("[WIFI] Connected"));
-        Serial.println(WiFi.localIP());
-    }
-}
-
-void inputtask(void *parameter)
+void touchtask()
 {
-    for(;;)
-    {
-        RI->rotaryRotation();
-    }
-}
-
-void sdcardintializsetask(void *parameter)
-{
-  for(;;)
-  {
-    //sdenabled = SD.begin(SD_CS);
-    if(sdenabled)
-    {
-      vTaskDelete(NULL);
-      continue;
-    }
-    Serial.println(F("Intitalizing SD Card ..."));
-    sdenabled = SD.begin(SD_CS);
-    delay(200);
-    unsigned long startAttemptTime = millis();
-    while(sdenabled != true && millis() - startAttemptTime < SD_TIMEOUT_MS){}
-
-    if(sdenabled != true)
-    {
-      Serial.println(F("SD Failed"));
-      vTaskDelay(SD_RECOVER_TIME_MS / portTICK_PERIOD_MS);
-      continue;
-    }
-    Serial.println(F("SD Card Intialized"));
-  }
-}
-
-void touchtask(void *para)
-{
-  for(;;)
-  {
     th->touchtask();
-    vTaskDelay(30);
+    // th->tevent->pollTouchScreen();
+}
+
+void touch_calibrate()
+{
+  uint16_t calData[5];
+  uint8_t calDataOK = 0;
+
+  // check file system exists
+  if (!SPIFFS.begin()) {
+    Serial.println("Formating file system");
+    SPIFFS.format();
+    SPIFFS.begin();
+  }
+
+  // check if calibration file exists and size is correct
+  if (SPIFFS.exists(CALIBRATION_FILE)) {
+    if (REPEAT_CAL)
+    {
+      // Delete if we want to re-calibrate
+      SPIFFS.remove(CALIBRATION_FILE);
+    }
+    else
+    {
+      File f = SPIFFS.open(CALIBRATION_FILE, "r");
+      if (f) {
+        if (f.readBytes((char *)calData, 14) == 14)
+          calDataOK = 1;
+        f.close();
+      }
+    }
+  }
+
+  if (calDataOK && !REPEAT_CAL) {
+    // calibration data valid
+    tft.setTouch(calData);
+  } else {
+    // data not valid so recalibrate
+    tft.fillScreen(TFT_BLACK);
+    tft.setCursor(20, 0);
+    tft.setTextFont(2);
+    tft.setTextSize(1);
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+
+    tft.println("Touch corners as indicated");
+
+    tft.setTextFont(1);
+    tft.println();
+
+    if (REPEAT_CAL) {
+      tft.setTextColor(TFT_RED, TFT_BLACK);
+      tft.println("Set REPEAT_CAL to false to stop this running again!");
+    }
+
+    tft.calibrateTouch(calData, TFT_MAGENTA, TFT_BLACK, 15);
+
+    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    tft.println("Calibration complete!");
+
+    // store data
+    File f = SPIFFS.open(CALIBRATION_FILE, "w");
+    if (f) {
+      f.write((const unsigned char *)calData, 14);
+      f.close();
+    }
   }
 }
 
+void setup(){
+    //Start Display
+    display->begin();
+    display->setSwapBytes(true);
+    display->setRotation(2);
+    display->fillScreen(TFT_BLACK);
+    // display->setCursor(55,113);
+    display->setCursor(0,0);
+    display->setTextColor(TFT_WHITE,TFT_BLACK);
+    display->setTextSize(1);
+    display->println(F("Loading..."));
+    //Serial Debugger
+    Serial.begin(9600);
+    display->println(F("Serial Debugger Established"));
 
-void apphandlerimptask(void *para)
-{
-  for(;;)
+    //file system enable
+    display->println(F("Mounting FileSystem ...."));
+    if(!SPIFFS.begin(true)){
+        display->println(F("An Error has occurred while mounting SPIFFS"));
+  }
+  else{
+      display->println(F("Filesystem Mounted"));
+  }
+  delay(1000);
+  //tms.configtimezone();
+  //tms.timeupdate();
+  //Wifi Service Established
+  // wifiserv.bootwifi();
+  touch_calibrate();
+  // display->println(F("Touch Starting..."));
+  // xTaskCreate(touchtask,"Touch Task",configMINIMAL_STACK_SIZE,NULL,1,NULL);
+  // display->println(F("Touch Started. See Serial Debugging for more info"));
+  
+  display->fillScreen(TFT_BLACK);
+  // trial.initButton(&tft,100,100,50,50,TFT_WHITE,TFT_CYAN,TFT_BLACK,"Hello",1);
+  // trial.drawButton();
+}
+
+void loop(){
+  keyboard->keyboardtaskhandler();
+  // touchtask();
+  th->tevent->pollTouchScreen();
+  if(th->pressed && trial.contains(th->x,th->y) && th->typeEvent == 3){
+    trial.press(true);
+  }
+  else{
+    trial.press(false);
+  }
+
+  if(trial.justReleased())
+    trial.drawButton();
+  if(trial.justPressed())
   {
-    aph.appflagchecker();
-    vTaskDelay(1);
+    trial.drawButton(true);
+    Serial.println("Button Clicked");
   }
-}
-
-bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap)
-{
-  if ( y >= tft.height() ) return 0;
-  tft.pushImage(x, y, w, h, bitmap);
-  return 1;
-}
-
-void setup() {
-  Serial.begin(9600);
-
-  digitalWrite(21, HIGH);
-  digitalWrite(15, HIGH);
-  digitalWrite(5, HIGH);
-  display->begin();
-  display->setSwapBytes(true);
-  display->setRotation(2);
-  display->setCursor(55,113);
-  display->fillScreen(TFT_BLACK);
-  display->setTextColor(TFT_WHITE,TFT_BLACK);
-  display->setTextSize(2);
-  display->println(F("Loading..."));
-  xTaskCreate(keepWiFiAlive,"WifiService",5500,NULL,5,&wifitaskhandle);
-
-  
-  xTaskCreate(sdcardintializsetask,"SD Card Task",6000,NULL,2,NULL);
-  tms.configtimezone();
-  tms.timeupdate();
-    
-  xTaskCreate(inputtask,"Rotary Input",configMINIMAL_STACK_SIZE,NULL,1,&rotarytaskhandle);
-  xTaskCreate(touchtask,"Touch Task",configMINIMAL_STACK_SIZE,NULL,1,NULL);
-  xTaskCreate(apphandlerimptask,"Apphandler",configMINIMAL_STACK_SIZE,NULL,1,NULL);
-  TJpgDec.setCallback(tft_output);
-  delay(5);
-  display->setViewport(0,0,240,240);
-  display->fillScreen(TFT_BLACK);
-  loading = false;
-  aph.startapp("Homeapp");
-  
-}
-
-void loop() {
 }

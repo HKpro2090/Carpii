@@ -10,7 +10,7 @@ struct servicepointers
 {
     Timeservice *tmsp;
     TFT_eSPI *display;
-    RotaryInput *rotationinput;
+    //RotaryInput *rotationinput;
     TouchHandler *touchinput;
 };
 

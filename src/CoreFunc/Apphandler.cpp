@@ -29,14 +29,14 @@ void weatherapptask(void *para)
     }
 }
 
-Apphandler::Apphandler(Timeservice* tmsp,TFT_eSPI *espi,RotaryInput *rip,TouchHandler *th,Apphandler *selfaph)
+Apphandler::Apphandler(Timeservice* tmsp,TFT_eSPI *espi,TouchHandler *th,Apphandler *selfaph)
 {
     tft1 = espi;
     Laucherapptask = NULL;
     otherapprunning = false;
     services.display = espi;
     services.tmsp = tmsp;
-    services.rotationinput = rip;
+    //services.rotationinput = rip;
     services.touchinput = th;
     aph = selfaph;
     startappstruct.startapp = false;
@@ -65,6 +65,7 @@ void Apphandler::startapp(char *s)
         xTaskCreate(weatherapptask,s,5000,weap,1,&Weatherapptaskhandle);
         push(Weatherapptaskhandle);
     }
+
 }
 
 void Apphandler::quitapp()

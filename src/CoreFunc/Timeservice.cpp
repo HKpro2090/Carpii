@@ -4,7 +4,7 @@ Timeservice::Timeservice(long gmt,int daylight)
 {
     gmtOffset_sec = gmt;
     daylightsavingoffset = daylight;
-    
+    //configtimezone();
 }
 void Timeservice::changetimezone(long gmt,int daylight)
 {
